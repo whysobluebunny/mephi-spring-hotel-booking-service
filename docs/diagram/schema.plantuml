@@ -1,0 +1,20 @@
+@startuml
+skinparam componentStyle rectangle
+skinparam shadowing false
+left to right direction
+
+actor Client
+
+rectangle "API Gateway\n:8080" as Gateway
+rectangle "Booking Service\n:8081" as Booking
+rectangle "Hotel Service\n:8082" as Hotel
+rectangle "Eureka Server\n:8761" as Eureka
+
+Client --> Gateway : REST + JWT
+Gateway --> Booking : /api/bookings/**\n/api/users/**
+Gateway --> Hotel : /api/hotels/**\n/api/rooms/**
+Booking --> Hotel : confirm-availability\nrelease\nrecommend rooms
+Booking --> Eureka : register/discover
+Hotel --> Eureka : register/discover
+Gateway --> Eureka : discover routes
+@enduml

@@ -1,0 +1,31 @@
+@startuml
+skinparam shadowing false
+
+actor User
+participant "API Gateway" as Gateway
+participant "Booking Service" as Booking
+participant "Hotel Service" as Hotel
+database "Booking DB" as BookingDb
+database "Hotel DB" as HotelDb
+
+User -> Gateway : POST /api/bookings\nJWT + X-Request-Id
+Gateway -> Booking : create booking request
+Booking -> BookingDb : save booking(PENDING)
+Booking -> Hotel : confirm-availability
+
+alt timeout or remote error
+    Hotel --> Booking : error / timeout
+    Booking -> Booking : retry with backoff
+    Booking -> BookingDb : update status(CANCELLED)
+    Booking -> Hotel : POST /api/rooms/{id}/release
+    Hotel -> HotelDb : mark temporary lock RELEASED
+    Hotel --> Booking : 200 OK
+    Booking --> Gateway : booking(CANCELLED)
+    Gateway --> User : 409 / 503
+else room unavailable
+    Hotel --> Booking : 409 Conflict
+    Booking -> BookingDb : update status(CANCELLED)
+    Booking --> Gateway : booking(CANCELLED)
+    Gateway --> User : 409 Conflict
+end
+@enduml

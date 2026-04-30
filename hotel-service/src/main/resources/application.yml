@@ -1,0 +1,40 @@
+server:
+  port: ${SERVER_PORT:8082}
+
+spring:
+  application:
+    name: hotel-service
+  datasource:
+    url: jdbc:h2:mem:hotel-db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_DEFAULT_ZONE:http://localhost:8761/eureka}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+app:
+  security:
+    jwt-secret: ${APP_SECURITY_JWT_SECRET:12345678901234567890123456789012}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

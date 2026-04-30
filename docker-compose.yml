@@ -1,0 +1,60 @@
+services:
+  eureka-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE_NAME: eureka-server
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    environment:
+      EUREKA_HOSTNAME: eureka-server
+
+  hotel-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE_NAME: hotel-service
+    container_name: hotel-service
+    depends_on:
+      - eureka-server
+    ports:
+      - "8082:8082"
+    environment:
+      EUREKA_DEFAULT_ZONE: http://eureka-server:8761/eureka
+      APP_SECURITY_JWT_SECRET: "dev-jwt-secret-key-please-change-1234567890"
+
+  booking-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE_NAME: booking-service
+    container_name: booking-service
+    depends_on:
+      - eureka-server
+      - hotel-service
+    ports:
+      - "8081:8081"
+    environment:
+      EUREKA_DEFAULT_ZONE: http://eureka-server:8761/eureka
+      HOTEL_SERVICE_URL: http://hotel-service:8082
+      APP_SECURITY_JWT_SECRET: "dev-jwt-secret-key-please-change-1234567890"
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE_NAME: api-gateway
+    container_name: api-gateway
+    depends_on:
+      - eureka-server
+      - booking-service
+      - hotel-service
+    ports:
+      - "8080:8080"
+    environment:
+      EUREKA_DEFAULT_ZONE: http://eureka-server:8761/eureka

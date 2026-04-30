@@ -1,0 +1,19 @@
+@startuml
+skinparam shadowing false
+
+actor User
+participant "API Gateway" as Gateway
+participant "Booking Service" as Booking
+participant "Hotel Service" as Hotel
+database "Hotel DB" as HotelDb
+
+User -> Gateway : POST /api/bookings\nautoSelect=true
+Gateway -> Booking : create booking request
+Booking -> Hotel : GET /api/rooms/recommend
+Hotel -> HotelDb : find available rooms\nexcluding overlapping locks
+Hotel -> Hotel : sort by timesBooked, then id
+Hotel --> Booking : ordered room list
+Booking -> Booking : choose first room
+Booking --> Gateway : continue booking flow
+Gateway --> User : selected room in booking result
+@enduml

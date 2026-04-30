@@ -1,0 +1,20 @@
+@startuml
+skinparam shadowing false
+
+actor User
+participant "API Gateway" as Gateway
+participant "Booking Service" as Booking
+participant "Hotel Service" as Hotel
+database "Booking DB" as BookingDb
+database "Hotel DB" as HotelDb
+
+User -> Gateway : POST /api/bookings\nJWT + X-Request-Id
+Gateway -> Booking : create booking request
+Booking -> BookingDb : save booking(PENDING)
+Booking -> Hotel : POST /api/rooms/{id}/confirm-availability
+Hotel -> HotelDb : lock slot + increment timesBooked
+Hotel --> Booking : 200 OK
+Booking -> BookingDb : update status(CONFIRMED)
+Booking --> Gateway : booking(CONFIRMED)
+Gateway --> User : 201 Created
+@enduml
