@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import ru.mephi.abondarenko.hotel.api.dto.CreateHotelRequest;
 import ru.mephi.abondarenko.hotel.api.dto.CreateRoomRequest;
+import ru.mephi.abondarenko.hotel.api.dto.HotelAnalyticsResponse;
 import ru.mephi.abondarenko.hotel.api.dto.HotelResponse;
 import ru.mephi.abondarenko.hotel.api.dto.RoomOccupancyStatsResponse;
 import ru.mephi.abondarenko.hotel.api.dto.RoomResponse;
@@ -79,6 +80,12 @@ public class HotelController {
     @PreAuthorize("hasRole('ADMIN')")
     public List<RoomOccupancyStatsResponse> getRoomOccupancyStats() {
         return hotelService.getRoomOccupancyStats();
+    }
+
+    @GetMapping("/hotels/analytics")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<HotelAnalyticsResponse> getHotelAnalytics() {
+        return hotelService.getHotelAnalytics();
     }
 
     @GetMapping("/rooms")

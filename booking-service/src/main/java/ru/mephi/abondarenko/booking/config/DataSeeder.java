@@ -26,6 +26,14 @@ public class DataSeeder {
                 admin.setRole(Role.ADMIN);
                 userRepository.save(admin);
             }
+
+            if (userRepository.findByUsername("user").isEmpty()) {
+                UserEntity user = new UserEntity();
+                user.setUsername("user");
+                user.setPassword(passwordEncoder.encode("user"));
+                user.setRole(Role.USER);
+                userRepository.save(user);
+            }
         };
     }
 }

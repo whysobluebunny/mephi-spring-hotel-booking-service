@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -19,6 +20,7 @@ import ru.mephi.abondarenko.booking.api.dto.HotelAvailabilityRequest;
 import ru.mephi.abondarenko.booking.api.dto.HotelAvailabilityResponse;
 import ru.mephi.abondarenko.booking.api.dto.HotelRoomResponse;
 import ru.mephi.abondarenko.booking.api.dto.ReleaseRequest;
+import ru.mephi.abondarenko.booking.logging.TraceIdFilter;
 import ru.mephi.abondarenko.booking.security.JwtService;
 
 @Slf4j
@@ -75,6 +77,10 @@ public class HotelClient {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(jwtService.generateInternalToken());
+        String traceId = MDC.get(TraceIdFilter.TRACE_MDC_KEY);
+        if (traceId != null && !traceId.isBlank()) {
+            headers.set(TraceIdFilter.TRACE_HEADER, traceId);
+        }
         return headers;
     }
 

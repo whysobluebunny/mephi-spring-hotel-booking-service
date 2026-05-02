@@ -176,4 +176,17 @@ class HotelServiceApplicationTests {
 
         assertThat(content).contains("timesBooked");
     }
+
+    @Test
+    void shouldReturnHotelAnalyticsForAdmin() throws Exception {
+        String content = mockMvc.perform(get("/api/hotels/analytics")
+                        .with(jwt().jwt(jwt -> jwt.claim("roles", java.util.List.of("ADMIN")))
+                                .authorities(createAuthorityList("ROLE_ADMIN"))))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertThat(content).contains("hotelName").contains("leastBookedRoomNumber").contains("mostBookedRoomNumber");
+    }
 }

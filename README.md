@@ -81,6 +81,20 @@ docker compose down
 - Booking Service: `http://localhost:8081/swagger-ui.html`
 - Hotel Service: `http://localhost:8082/swagger-ui.html`
 
+## Demo Accounts
+
+- `admin` / `admin` — роль `ADMIN`
+- `user` / `user` — роль `USER`
+
+## Environment Variables
+
+- `APP_SECURITY_JWT_SECRET` — общий секрет для подписи и проверки JWT во всех сервисах
+- `EUREKA_DEFAULT_ZONE` — адрес Eureka для клиентов
+- `HOTEL_SERVICE_URL` — прямой URL `hotel-service` для внутренних вызовов из `booking-service`
+- `SERVER_PORT` — локальный порт сервиса
+
+При первом `docker compose up --build` запуск может занять несколько минут, потому что Docker и Maven прогревают кэш и скачивают зависимости.
+
 ## Тесты
 
 ```bash
@@ -94,6 +108,53 @@ docker compose down
 3. Администратором создать отель и комнаты.
 4. Пользователем запросить свободные или рекомендованные комнаты.
 5. Создать бронирование через `POST /api/bookings` с `X-Request-Id`.
+
+## Предзаполнение данных
+
+- В `booking-service` создаются пользователи `admin/admin` и `user/user`.
+- В `hotel-service` создаются два отеля: `Aurora` и `Neva Palace`.
+- Для комнат заранее формируется разная история подтверждений, чтобы рекомендации по `timesBooked` и аналитика по загрузке были видны сразу после старта.
+- Одна из комнат (`Aurora 103`) помечена как операционно недоступная, чтобы показать отличие между `available` и занятостью по датам.
+
+## Схема БД
+
+### Booking Service
+
+- `users`: `id`, `username`, `password`, `role`
+- `bookings`: `id`, `user_id`, `room_id`, `request_id`, `start_date`, `end_date`, `status`, `created_at`
+
+Особенности:
+
+- `username` уникален
+- `request_id` уникален и используется для идемпотентности повторной доставки запроса
+
+### Hotel Service
+
+- `hotels`: `id`, `name`, `address`
+- `rooms`: `id`, `hotel_id`, `number`, `available`, `times_booked`
+- `room_locks`: `id`, `room_id`, `booking_id`, `request_id`, `start_date`, `end_date`, `status`, `created_at`, `released_at`
+
+Особенности:
+
+- `rooms.hotel_id -> hotels.id`
+- `room_locks.request_id` уникален для идемпотентности внутренних confirm/release запросов
+- `room_locks` хранит временные блокировки слотов по датам и используется в саге бронирования
+
+## Ключевые Endpoint'ы
+
+- `POST /api/users/register` — регистрация пользователя и получение JWT
+- `POST /api/users/auth` — вход и получение JWT
+- `POST /api/bookings` — создание бронирования, поддерживает `X-Request-Id`
+- `GET /api/bookings?page=0&size=10` — история своих бронирований с пагинацией
+- `GET /api/rooms/recommend?startDate=...&endDate=...` — рекомендованные комнаты по `timesBooked`
+- `GET /api/rooms/stats` — статистика по комнатам для `ADMIN`
+- `GET /api/hotels/analytics` — агрегированная аналитика по отелям для `ADMIN`
+- `POST /internal/rooms/{id}/confirm-availability` и `POST /internal/rooms/{id}/release` — внутренние маршруты межсервисной координации, не для внешнего клиента
+
+## Correlation Headers
+
+- `X-Request-Id` — ключ идемпотентности запроса на бронирование
+- `X-Trace-Id` — сквозной идентификатор трассировки между gateway, booking-service и hotel-service
 
 ## Архитектура
 ![schema.png](docs/diagram/schema.png)

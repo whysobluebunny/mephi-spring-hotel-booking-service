@@ -9,6 +9,7 @@ import ru.mephi.abondarenko.hotel.api.dto.AvailabilityRequest;
 import ru.mephi.abondarenko.hotel.api.dto.AvailabilityResponse;
 import ru.mephi.abondarenko.hotel.api.dto.CreateHotelRequest;
 import ru.mephi.abondarenko.hotel.api.dto.CreateRoomRequest;
+import ru.mephi.abondarenko.hotel.api.dto.HotelAnalyticsResponse;
 import ru.mephi.abondarenko.hotel.api.dto.RoomOccupancyStatsResponse;
 import ru.mephi.abondarenko.hotel.api.dto.UpdateHotelRequest;
 import ru.mephi.abondarenko.hotel.api.dto.UpdateRoomRequest;
@@ -66,6 +67,41 @@ public class HotelService {
                         roomLockRepository.countByRoomIdAndStatus(room.getId(), RoomLockStatus.ACTIVE)))
                 .sorted(Comparator.comparing(RoomOccupancyStatsResponse::timesBooked).reversed()
                         .thenComparing(RoomOccupancyStatsResponse::roomId))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<HotelAnalyticsResponse> getHotelAnalytics() {
+        return hotelRepository.findAll().stream()
+                .map(hotel -> {
+                    List<Room> rooms = roomRepository.findAllByHotelId(hotel.getId());
+                    long activeLocks = rooms.stream()
+                            .mapToLong(room -> roomLockRepository.countByRoomIdAndStatus(room.getId(), RoomLockStatus.ACTIVE))
+                            .sum();
+                    long availableRooms = rooms.stream().filter(Room::isAvailable).count();
+                    long totalTimesBooked = rooms.stream().mapToLong(Room::getTimesBooked).sum();
+
+                    String leastBookedRoom = rooms.stream()
+                            .min(Comparator.comparingLong(Room::getTimesBooked).thenComparing(Room::getId))
+                            .map(Room::getNumber)
+                            .orElse(null);
+                    String mostBookedRoom = rooms.stream()
+                            .max(Comparator.comparingLong(Room::getTimesBooked).thenComparing(Room::getId))
+                            .map(Room::getNumber)
+                            .orElse(null);
+
+                    return new HotelAnalyticsResponse(
+                            hotel.getId(),
+                            hotel.getName(),
+                            rooms.size(),
+                            availableRooms,
+                            activeLocks,
+                            totalTimesBooked,
+                            leastBookedRoom,
+                            mostBookedRoom);
+                })
+                .sorted(Comparator.comparingLong(HotelAnalyticsResponse::totalTimesBooked).reversed()
+                        .thenComparing(HotelAnalyticsResponse::hotelId))
                 .toList();
     }
 
